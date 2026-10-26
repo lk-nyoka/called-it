@@ -36,7 +36,8 @@
       const time = document.createElement("time");
       time.className = "entry-time";
       time.dateTime = new Date(entry.timestamp).toISOString();
-      time.textContent = new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      time.dataset.timestamp = String(entry.timestamp);
+      time.textContent = ageLabel(entry.timestamp);
       const source = document.createElement("span");
       source.className = `entry-source ${entry.source === "event" ? "event" : ""}`;
       source.textContent = entry.source === "event" ? "EVENT" : entry.source === "chat" ? "CHAT" : "YOU";
@@ -69,7 +70,13 @@
     if (changed) renderEntries();
   }
 
-  setInterval(pruneEntries, 10_000);
+  function refreshEntryTimes() {
+    for (const time of transcript.querySelectorAll(".entry-time[data-timestamp]")) {
+      time.textContent = ageLabel(Number(time.dataset.timestamp));
+    }
+  }
+
+  setInterval(() => { pruneEntries(); refreshEntryTimes(); }, 10_000);
 
   function renderCalls() {
     for (const card of [...callsList.querySelectorAll(".call-card")]) card.remove();
