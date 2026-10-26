@@ -58,12 +58,13 @@ export function resolveCallAndBroadcast(
   store: CallStore,
   id: number,
   action: "correct" | "incorrect" | "nuked",
+  now = Date.now(),
 ): ReturnType<CallStore["resolveCall"]> {
-  const result = store.resolveCall(id, action);
+  const result = store.resolveCall(id, action, now);
   if (!result.ok) return result;
   publishOpenCalls(store);
   if (action === "correct") {
-    const minutes = Math.floor((Date.now() - result.call.created_at) / 60_000);
+    const minutes = Math.floor((now - result.call.created_at) / 60_000);
     broadcastOverlayEvent({
       type: "called-it",
       viewerLogin: result.call.viewer_login,
@@ -80,7 +81,7 @@ export function resolveCallAndBroadcast(
 export function createChatCommandHandler(
   store: CallStore,
   send: SendMessage,
-  options: { expiryTimer?: boolean; scoreBoldness?: (text: string) => Promise<number>; jury?: JuryManager } = {},
+  options: { expiryTimer?: boolean; scoreBoldness?: (text: string) => Promise<number>; jury?: JuryManager; now?: () => number } = {},
 ): { handleChatMessage: (event: ChatMessageEvent) => Promise<void>; isJudgeEnabled: () => boolean; setJudgeEnabled: (enabled: boolean) => void; stop: () => void } {
   let judgeEnabled = true;
   const rejectedVotesWithoutJury = new Set<string>();
@@ -122,7 +123,7 @@ export function createChatCommandHandler(
         await reply(event, "That call contains blocked language. Please rephrase it.");
       } else {
         const boldness = options.scoreBoldness ? await options.scoreBoldness(prediction) : 2;
-        const result = store.createCall({ viewerId, viewerLogin: login, text: prediction, boldness });
+        const result = store.createCall({ viewerId, viewerLogin: login, text: prediction, boldness, now: options.now?.() });
         if (result.ok) {
           publishOpenCalls(store);
           await reply(event, `📌 Call #${result.call.id} locked in`);
@@ -180,13 +181,14 @@ export function createChatCommandHandler(
       }
       const decision = action === "yes" ? "correct" : action === "no" ? "incorrect" : "nuked";
       options.jury?.cancel(id, false);
-      const result = resolveCallAndBroadcast(store, id, decision);
+      const now = options.now?.() ?? Date.now();
+      const result = resolveCallAndBroadcast(store, id, decision, now);
       options.jury?.resumeQueue();
       if (!result.ok) {
         await reply(event, result.reason === "not_found" ? `Call #${id} was not found.` : `Call #${id} is no longer open.`);
       } else {
         if (action === "yes") {
-          await reply(event, formatCallConfirmation(result.call));
+          await reply(event, formatCallConfirmation(result.call, now));
         } else if (action === "no") {
           await reply(event, `❌ Call #${id} marked incorrect.`);
         } else {

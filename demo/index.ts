@@ -18,6 +18,9 @@ const JURY_MS = 10_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const overlayDirectory = path.resolve(here, "../web/overlay");
 const consoleDirectory = path.resolve(here, "../web/console");
+let storyTime = 0;
+const demoClockOrigin = Date.now() - 12 * 60_000;
+const demoNow = () => demoClockOrigin + storyTime;
 
 process.env.CALLED_IT_DEMO = "1";
 const { createChatCommandHandler, resolveCallAndBroadcast, formatCallConfirmation } = await import("../src/chat/commands.js");
@@ -64,9 +67,9 @@ jury = new JuryManager(
   broadcastOverlayEvent,
   logChat,
   (id, result) => {
-    const resolved = resolveCallAndBroadcast(store, id, result);
+    const resolved = resolveCallAndBroadcast(store, id, result, demoNow());
     if (!resolved.ok) return false;
-    return result === "correct" ? formatCallConfirmation(resolved.call) : true;
+    return result === "correct" ? formatCallConfirmation(resolved.call, demoNow()) : true;
   },
   JURY_MS,
 );
@@ -74,6 +77,7 @@ jury = new JuryManager(
 const commandHandler = createChatCommandHandler(store, logChat, {
   expiryTimer: false,
   scoreBoldness: async () => 2,
+  now: demoNow,
   jury,
 });
 const keywordJudge = new KeywordJudge();
@@ -107,7 +111,6 @@ app.get("/api/console/state", (_request, response) => {
 
 const wait = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
 const waitVirtual = (milliseconds: number) => wait(milliseconds / SPEED);
-let storyTime = 0;
 
 function stage(message: string): void {
   const minutes = Math.floor(storyTime / 60_000).toString().padStart(2, "0");
@@ -182,7 +185,7 @@ async function runSession(): Promise<void> {
   await wait(700);
   await fakeChat("receiptfan1", "voter-r1", "!receipts");
   await fakeChat("receiptfan2", "voter-r2", "!receipts");
-  storyTime += 80_000;
+  storyTime = 12 * 60_000;
   await wait(JURY_MS + 250);
   if (store.getCall(1)?.status !== "correct") throw new Error("Call #1 did not resolve as CALLED IT.");
 
