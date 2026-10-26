@@ -185,7 +185,7 @@ export function createChatCommandHandler(
       options.jury?.cancel(id, false);
       const now = options.now?.() ?? Date.now();
       const result = resolveCallAndBroadcast(store, id, decision, now);
-      options.jury?.resumeQueue();
+      options.jury?.resumeQueue(result.ok ? action === "yes" ? 5_000 : action === "no" ? 3_000 : 0 : 0);
       if (!result.ok) {
         await reply(event, result.reason === "not_found" ? `Call #${id} was not found.` : `Call #${id} is no longer open.`);
       } else {
@@ -261,6 +261,6 @@ export function resolveWithJuryOverride(id: number, action: "correct" | "incorre
   if (result.ok && action === "correct") {
     void sendChatMessage(formatCallConfirmation(result.call)).catch(() => console.error(`Could not announce confirmation for Call #${id}.`));
   }
-  juryManager.resumeQueue();
+  juryManager.resumeQueue(result.ok ? action === "correct" ? 5_000 : action === "incorrect" ? 3_000 : 0 : 0);
   return result;
 }

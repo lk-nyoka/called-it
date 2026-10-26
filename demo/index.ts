@@ -140,7 +140,7 @@ async function fakeChat(login: string, userId: string, text: string): Promise<vo
 }
 
 async function waitForJury(callId: number): Promise<void> {
-  for (let attempt = 0; attempt < 100; attempt++) {
+  for (let attempt = 0; attempt < 200; attempt++) {
     if (jury.getState()?.callId === callId) return;
     await wait(50);
   }

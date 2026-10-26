@@ -131,4 +131,20 @@ describe("jury voting", () => {
     expect(jury.getState()?.callId).toBe(2);
     expect(messages).toContain("Jury is open for Call #2! Vote !receipts or !cap for 10 seconds.");
   });
+
+  it("starts a queued jury after the CALLED IT card's five-second hold", async () => {
+    setup();
+    store.createCall({ viewerId: "author-2", viewerLogin: "author2", text: "the next chest is a mimic" });
+    jury.enqueue(1, 0.9);
+    jury.enqueue(2, 0.8);
+    await jury.vote("v1", "v1", "receipts");
+    await jury.vote("v2", "v2", "receipts");
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(store.getCall(1)?.status).toBe("correct");
+    expect(jury.getState()).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(jury.getState()).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(jury.getState()?.callId).toBe(2);
+  });
 });

@@ -10,6 +10,7 @@ type JuryEvent =
 export class JuryManager {
   private active?: JuryState;
   private timer?: ReturnType<typeof setTimeout>;
+  private queueResumeTimer?: ReturnType<typeof setTimeout>;
   private readonly votes = new Map<string, "receipts" | "cap">();
   private readonly rejectedVoteReplies = new Set<string>();
   private readonly queue: QueuedJury[] = [];
@@ -94,10 +95,20 @@ export class JuryManager {
     if (resumeQueue && (this.active === undefined || this.queue.length !== queuedBefore)) void this.openNext();
   }
 
-  resumeQueue(): void { void this.openNext(); }
+  resumeQueue(delayMs = 0): void {
+    if (this.queueResumeTimer) clearTimeout(this.queueResumeTimer);
+    this.queueResumeTimer = undefined;
+    if (delayMs > 0) {
+      this.queueResumeTimer = setTimeout(() => {
+        this.queueResumeTimer = undefined;
+        void this.openNext();
+      }, delayMs);
+      this.queueResumeTimer.unref?.();
+    } else void this.openNext();
+  }
 
   private async openNext(): Promise<void> {
-    if (this.active) return;
+    if (this.active || this.queueResumeTimer) return;
     while (this.queue.length && !this.active) {
       const next = this.queue.shift()!;
       if ((this.cooldownUntil.get(next.callId) ?? 0) > Date.now()) continue;
@@ -109,6 +120,7 @@ export class JuryManager {
   private async closeByVote(): Promise<void> {
     const jury = this.active;
     if (!jury) return;
+    let momentDelayMs = 0;
     this.cancel(jury.callId, false);
     this.cooldownUntil.set(jury.callId, Date.now() + 60_000);
     const totalVotes = jury.receipts + jury.cap;
@@ -117,6 +129,7 @@ export class JuryManager {
       if (resolution === false) {
         try { await this.send(`Call #${jury.callId} is unresolved because it is no longer open.`); } catch { /* Twitch chat may be unavailable. */ }
       } else {
+        momentDelayMs = 5_000;
         const message = typeof resolution === "string" ? resolution : `RECEIPTS! Call #${jury.callId} is confirmed.`;
         try { await this.send(message); } catch { /* Twitch chat may be unavailable. */ }
       }
@@ -124,6 +137,7 @@ export class JuryManager {
       if (this.resolve(jury.callId, "incorrect") === false) {
         try { await this.send(`Call #${jury.callId} is unresolved because it is no longer open.`); } catch { /* Twitch chat may be unavailable. */ }
       } else {
+        momentDelayMs = 3_000;
         try { await this.send(`CAP! Call #${jury.callId} is marked incorrect.`); } catch { /* Twitch chat may be unavailable. */ }
       }
     } else if (totalVotes === 0 && jury.confidence >= 0.85) {
@@ -131,6 +145,7 @@ export class JuryManager {
       if (resolution === false) {
         try { await this.send(`Call #${jury.callId} is unresolved because it is no longer open.`); } catch { /* Twitch chat may be unavailable. */ }
       } else {
+        momentDelayMs = 5_000;
         const message = typeof resolution === "string" ? resolution : `No jury votes; judge confidence was ${(jury.confidence * 100).toFixed(0)}%. Call #${jury.callId} is confirmed.`;
         try { await this.send(message); } catch { /* Twitch chat may be unavailable. */ }
       }
@@ -142,6 +157,6 @@ export class JuryManager {
           : `Call #${jury.callId} is unresolved: confirmation needs at least two votes and 60% RECEIPTS.`;
       try { await this.send(result); } catch { /* Twitch chat may be unavailable. */ }
     }
-    void this.openNext();
+    this.resumeQueue(momentDelayMs);
   }
 }
