@@ -17,6 +17,7 @@ const SPEED = 8;
 const JURY_MS = 10_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const overlayDirectory = path.resolve(here, "../web/overlay");
+const consoleDirectory = path.resolve(here, "../web/console");
 
 process.env.CALLED_IT_DEMO = "1";
 const { createChatCommandHandler, resolveCallAndBroadcast, formatCallConfirmation } = await import("../src/chat/commands.js");
@@ -27,6 +28,8 @@ const app = express();
 app.get("/health", (_request, response) => response.json({ status: "ok", mode: "demo" }));
 app.get("/overlay", (_request, response) => response.sendFile(path.join(overlayDirectory, "index.html")));
 app.use("/overlay", express.static(overlayDirectory));
+app.get("/console", (_request, response) => response.sendFile(path.join(consoleDirectory, "index.html")));
+app.use("/console", express.static(consoleDirectory));
 
 const server = createServer(app);
 let jury!: JuryManager;
@@ -90,6 +93,16 @@ const scheduler = new JudgeScheduler({
       return jury.getState()?.callId === suggestion.callId ? "opened" : queued ? "queued" : undefined;
     },
   ),
+});
+
+app.get("/api/console/state", (_request, response) => {
+  response.json({
+    openCalls: openCalls(),
+    context: context.recent(),
+    judgeEnabled: true,
+    judgeSuggestions: scheduler.getSuggestions(),
+    activeJury: activeJury() ?? null,
+  });
 });
 
 const wait = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
