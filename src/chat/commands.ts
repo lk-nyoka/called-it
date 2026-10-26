@@ -1,6 +1,6 @@
 import { CallStore } from "../core/callStore.js";
 import { containsBlockedWord } from "./filter.js";
-import { sendChatMessage } from "../twitch/helix.js";
+import { createClipIfLive, sendChatMessage } from "../twitch/helix.js";
 import { broadcastOverlayEvent } from "../server/overlayBus.js";
 import { scoreCallBoldness } from "../judge/provider.js";
 import { JuryManager } from "../core/jury.js";
@@ -72,6 +72,7 @@ export function resolveCallAndBroadcast(
       calledAgo: minutes < 1 ? "just now" : `${minutes}m ago`,
       points: result.call.points_awarded,
     });
+    void createClipIfLive(result.call.viewer_login);
   } else if (action === "incorrect") {
     broadcastOverlayEvent({ type: "hall-of-cap", viewerLogin: result.call.viewer_login, callText: result.call.text });
   }
@@ -154,6 +155,7 @@ export function createChatCommandHandler(
         return;
       }
       const leaders = store.getLeaderboard(5);
+      broadcastOverlayEvent({ type: "leaderboard", leaders: leaders.map((leader) => ({ viewerLogin: leader.viewer_login, points: leader.points })) });
       const lines = leaders.map((leader, index) => `${index + 1}. ${leader.viewer_login} ${leader.points}pts`);
       await reply(event, compactMessage(lines, "No prophets yet. Be the first to call it!"));
       return;

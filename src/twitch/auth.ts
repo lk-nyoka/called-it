@@ -22,7 +22,7 @@ const states = new Map<string, { role: TwitchRole; expiresAt: number }>();
 const refreshes = new Map<TwitchRole, Promise<Token>>();
 const scopes: Record<TwitchRole, string[]> = {
   bot: ["user:read:chat", "user:write:chat", "user:bot"],
-  broadcaster: ["channel:bot"],
+  broadcaster: ["channel:bot", "clips:edit"],
 };
 
 function setting(name: string): string {

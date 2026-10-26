@@ -5,6 +5,8 @@ import { createPlaybackQueue } from "./playbackQueue.js";
   const juryCard = $("jury-card");
   const calledCard = $("called-card");
   const capCard = $("cap-card");
+  const leaderboardCard = $("leaderboard-card");
+  const recapCard = $("recap-card");
   const tickerCall = $("ticker-call");
   const tickerIndex = $("ticker-index");
   const connectionState = $("connection-state");
@@ -26,10 +28,12 @@ import { createPlaybackQueue } from "./playbackQueue.js";
     else if (event.type === "jury:start") showJury(event);
     else if (event.type === "called-it") showCalled(event);
     else if (event.type === "hall-of-cap") showCap(event);
-  });
+    else if (event.type === "leaderboard") showLeaderboard(event);
+    else if (event.type === "session:recap") showRecap(event);
+  }, { "called-it": 5_000, "hall-of-cap": 3_000, leaderboard: 8_000, "session:recap": 12_000 });
 
   function showOnly(card) {
-    for (const item of [juryCard, calledCard, capCard]) item.hidden = !card || item !== card;
+    for (const item of [juryCard, calledCard, capCard, leaderboardCard, recapCard]) item.hidden = !card || item !== card;
   }
 
   function updateTicker() {
@@ -156,6 +160,33 @@ import { createPlaybackQueue } from "./playbackQueue.js";
     playCapSound();
   }
 
+  function showLeaderboard(event) {
+    const list = $("leaderboard-list");
+    list.replaceChildren();
+    (event.leaders ?? []).forEach((leader, index) => {
+      const row = document.createElement("li");
+      row.textContent = `${index + 1}. @${leader.viewerLogin} · ${leader.points} pts`;
+      list.append(row);
+    });
+    if (!list.children.length) {
+      const row = document.createElement("li");
+      row.textContent = "No prophets yet. Be the first to call it!";
+      list.append(row);
+    }
+    showOnly(leaderboardCard);
+  }
+
+  function showRecap(event) {
+    const recap = event.recap ?? {};
+    $("recap-correct-name").textContent = recap.boldestCorrect ? `@${recap.boldestCorrect.viewer_login} · ${recap.boldestCorrect.boldness}/5 boldness` : "No confirmed calls";
+    $("recap-correct-call").textContent = recap.boldestCorrect ? `“${recap.boldestCorrect.text}” · ${recap.boldestCorrect.points_awarded} pts` : "";
+    $("recap-cap-name").textContent = recap.biggestCap ? `@${recap.biggestCap.viewer_login} · ${recap.biggestCap.boldness}/5 boldness` : "No capped calls";
+    $("recap-cap-call").textContent = recap.biggestCap ? `“${recap.biggestCap.text}”` : "";
+    $("recap-prophet-name").textContent = recap.topProphet ? `@${recap.topProphet.viewer_login}` : "No points yet";
+    $("recap-prophet-points").textContent = recap.topProphet ? `${recap.topProphet.points} points this session` : "";
+    showOnly(recapCard);
+  }
+
   function handleEvent(event) {
     switch (event.type) {
       case "state":
@@ -175,6 +206,8 @@ import { createPlaybackQueue } from "./playbackQueue.js";
         break;
       case "called-it": playback.enqueue(event); break;
       case "hall-of-cap": playback.enqueue(event); break;
+      case "leaderboard": playback.enqueue(event); break;
+      case "session:recap": playback.enqueue(event); break;
     }
   }
 
@@ -218,11 +251,17 @@ import { createPlaybackQueue } from "./playbackQueue.js";
           playback.finish("jury:start", 21);
           playback.enqueue({ type: "called-it", viewerLogin: calls[0].viewerLogin, callText: calls[0].text, calledAgo: "14m ago", points: 40 });
           playback.enqueue({ type: "hall-of-cap", viewerLogin: calls[2].viewerLogin, callText: calls[2].text });
+          playback.enqueue({ type: "leaderboard", leaders: [{ viewerLogin: "pixelprophet", points: 40 }, { viewerLogin: "chatoracle", points: 20 }] });
+          playback.enqueue({ type: "session:recap", recap: {
+            boldestCorrect: { viewer_login: "pixelprophet", text: calls[0].text, boldness: 5, points_awarded: 40 },
+            biggestCap: { viewer_login: calls[2].viewerLogin, text: calls[2].text, boldness: 4 },
+            topProphet: { viewer_login: "pixelprophet", points: 40 },
+          } });
           demoTimer = setTimeout(() => {
             callIndex = (callIndex + 1) % openCalls.length;
             updateTicker();
             cycle();
-          }, 8_000);
+          }, 28_000);
         }, 10_000);
       }, 2_000);
     };

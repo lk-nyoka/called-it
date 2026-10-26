@@ -80,6 +80,17 @@ blockquote { max-width: 730px; margin: 20px auto 0; color: #f4f5f2; font-size: c
 .cap-footer { justify-content: center; gap: 13px; margin-top: 27px; color: #a8999e; font-size: 12px; font-weight: 800; letter-spacing: .16em; }
 .cap-mark { padding: 8px 12px; border-radius: 7px; background: var(--pink); color: #210d14; font-size: 13px; letter-spacing: .1em; }
 
+.leaderboard-card { width: min(950px, calc(100vw - 70px)); border-color: rgba(199,255,94,.42); background: radial-gradient(ellipse at 50% 0%, rgba(130,182,48,.16), transparent 58%), linear-gradient(145deg, rgba(20,25,20,.98), rgba(8,12,10,.97)); }
+.leaderboard-card h2, .recap-card h2 { margin: 16px 0 0; color: #fff; font-size: clamp(48px, 5.5vw, 78px); line-height: .98; font-weight: 950; letter-spacing: -.065em; }
+.leaderboard-card ol { display: grid; gap: 10px; margin: 27px 0 0; padding: 0; list-style: none; counter-reset: ranks; }
+.leaderboard-card li { padding: 13px 18px; border: 1px solid rgba(199,255,94,.18); border-radius: 12px; background: rgba(199,255,94,.07); color: var(--lime); font-size: clamp(22px, 2.3vw, 34px); font-weight: 800; }
+.recap-card { width: min(1400px, calc(100vw - 70px)); border-color: rgba(169,151,255,.4); }
+.recap-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 30px; text-align: left; }
+.recap-grid > div { min-width: 0; padding: 21px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; background: rgba(255,255,255,.045); }
+.recap-grid span { display: block; color: var(--lime); font-size: 12px; font-weight: 900; letter-spacing: .13em; }
+.recap-grid strong { display: block; margin-top: 14px; color: white; font-size: clamp(19px, 2vw, 28px); overflow-wrap: anywhere; }
+.recap-grid p { margin: 10px 0 0; color: #c8cdd0; font-size: clamp(15px, 1.5vw, 20px); line-height: 1.25; overflow-wrap: anywhere; }
+
 .ticker {
   position: absolute;
   right: 40px;
@@ -128,6 +139,11 @@ blockquote { max-width: 730px; margin: 20px auto 0; color: #f4f5f2; font-size: c
   .called-card .moment-meta { margin-top: 25px; font-size: 18px; }
   .called-card .points-pill { padding: 12px 16px; font-size: 16px; }
   .called-card .points-pill b { font-size: 22px; }
+  .recap-card { width: calc(100vw - 28px); padding: 28px 20px; }
+  .recap-grid { grid-template-columns: 1fr; gap: 8px; margin-top: 18px; }
+  .recap-grid > div { padding: 12px 14px; }
+  .recap-grid strong { margin-top: 6px; font-size: 18px; }
+  .recap-grid p { margin-top: 4px; font-size: 14px; }
   .jury-card { padding: 22px; }
 }
 

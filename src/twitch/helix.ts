@@ -1,6 +1,23 @@
-import { getAccessToken } from "./auth.js";
+import { getAccessToken, getAccount } from "./auth.js";
 
 const API = "https://api.twitch.tv/helix";
+
+export async function createClipIfLive(viewerLogin: string): Promise<void> {
+  if (process.env.CALLED_IT_DEMO === "1") return;
+  try {
+    const account = await getAccount("broadcaster");
+    const clientId = process.env.TWITCH_CLIENT_ID;
+    if (!account || !clientId || !account.scopes.includes("clips:edit")) return;
+    const token = await getAccessToken("broadcaster");
+    const headers = { Authorization: `Bearer ${token}`, "Client-Id": clientId };
+    const streams = await fetch(`${API}/streams?user_id=${encodeURIComponent(account.userId)}`, { headers });
+    if (!streams.ok) return;
+    const live = await streams.json() as { data?: unknown[] };
+    if (!live.data?.length) return;
+    const query = new URLSearchParams({ broadcaster_id: account.userId, title: `Called It: @${viewerLogin}` });
+    await fetch(`${API}/clips?${query}`, { method: "POST", headers });
+  } catch { /* Clips are optional and never block a call resolution. */ }
+}
 
 export async function sendChatMessage(message: string, replyTo?: string): Promise<void> {
   const token = await getAccessToken("bot");

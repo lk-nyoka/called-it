@@ -6,6 +6,11 @@ import type { JudgeSuggestion } from "../judge/types.js";
 
 export type OverlayCall = { id: number; viewerLogin: string; text: string; createdAt: number; boldness: number };
 export type OverlayJury = { callId: number; viewerLogin: string; callText: string; durationMs: number; remainingMs: number; receipts: number; cap: number };
+export type SessionRecap = {
+  boldestCorrect: { viewer_login: string; text: string; boldness: number; points_awarded: number } | null;
+  biggestCap: { viewer_login: string; text: string; boldness: number } | null;
+  topProphet: { viewer_login: string; points: number } | null;
+};
 export type OverlayEvent =
   | { type: "state"; openCalls: OverlayCall[]; jury?: OverlayJury }
   | { type: "jury:start"; callId: number; viewerLogin: string; callText: string; durationMs?: number; receipts?: number; cap?: number }
@@ -15,6 +20,8 @@ export type OverlayEvent =
   | { type: "hall-of-cap"; viewerLogin: string; callText: string }
   | { type: "judge:state"; enabled: boolean }
   | { type: "judge:suggestions"; suggestions: JudgeSuggestion[] }
+  | { type: "leaderboard"; leaders: Array<{ viewerLogin: string; points: number }> }
+  | { type: "session:recap"; recap: SessionRecap }
   | { type: "context"; entry: ContextEntry };
 
 let overlayServer: WebSocketServer | undefined;

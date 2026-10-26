@@ -1,6 +1,6 @@
 import WebSocket from "ws";
 import { getAccessToken } from "./auth.js";
-import { handleChatMessage } from "../chat/commands.js";
+import { callStore, handleChatMessage } from "../chat/commands.js";
 import { contextBuffer } from "../core/context.js";
 import { addChatEvidence } from "../core/chatEvidence.js";
 import { broadcastOverlayEvent } from "../server/overlayBus.js";
@@ -8,6 +8,7 @@ import { broadcastOverlayEvent } from "../server/overlayBus.js";
 const DEFAULT_URL = "wss://eventsub.wss.twitch.tv/ws";
 let activeSocket: WebSocket | undefined;
 let starting = false;
+let streamStartedAt = Date.now();
 const recentChatMessageIds = new Set<string>();
 
 function rememberChatMessage(id: string): boolean {
@@ -37,12 +38,16 @@ async function subscribe(sessionId: string): Promise<void> {
     headers: { Authorization: `Bearer ${token}`, "Client-Id": clientId, "Content-Type": "application/json" },
     body: JSON.stringify({ type, version, condition, transport: { method: "websocket", session_id: sessionId } }),
   });
-  const [chatSubscription, raidSubscription] = await Promise.all([
+  const [chatSubscription, raidSubscription, streamOnlineSubscription, streamOfflineSubscription] = await Promise.all([
     createSubscription("channel.chat.message", "1", { broadcaster_user_id: broadcasterId, user_id: botId }),
     createSubscription("channel.raid", "1", { to_broadcaster_user_id: broadcasterId }),
+    createSubscription("stream.online", "1", { broadcaster_user_id: broadcasterId }),
+    createSubscription("stream.offline", "1", { broadcaster_user_id: broadcasterId }),
   ]);
   if (!chatSubscription.ok) throw new Error(`Twitch could not subscribe to channel chat (${chatSubscription.status}). Check bot chat access and both authorizations.`);
   if (!raidSubscription.ok) console.warn(`Called It could not subscribe to incoming raids (${raidSubscription.status}); chat will continue normally.`);
+  if (!streamOnlineSubscription.ok) console.warn(`Called It could not subscribe to stream starts (${streamOnlineSubscription.status}); recap will cover this app session.`);
+  if (!streamOfflineSubscription.ok) console.warn(`Called It could not subscribe to stream end (${streamOfflineSubscription.status}); no automatic session recap will appear.`);
   // channel.follow requires moderator:read:followers, which the current tokens do not have.
 }
 
@@ -84,6 +89,12 @@ function connect(url = DEFAULT_URL, isReconnect = false): void {
       const event = data.payload.event;
       const entry = contextBuffer.add("event", `${event.from_broadcaster_user_name} raided with ${event.viewers} viewers.`);
       broadcastOverlayEvent({ type: "context", entry });
+    } else if (type === "notification" && data.payload?.subscription?.type === "stream.online") {
+      const startedAt = Date.parse(data.payload.event?.started_at);
+      streamStartedAt = Number.isFinite(startedAt) ? startedAt : Date.now();
+    } else if (type === "notification" && data.payload?.subscription?.type === "stream.offline") {
+      broadcastOverlayEvent({ type: "session:recap", recap: callStore.getSessionRecap(streamStartedAt) });
+      streamStartedAt = Date.now();
     }
   });
   socket.on("close", () => {

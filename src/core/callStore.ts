@@ -102,6 +102,21 @@ export class CallStore {
       .all(limit) as Array<{ viewer_id: string; viewer_login: string; points: number }>;
   }
 
+  getSessionRecap(since: number): {
+    boldestCorrect: CallRecord | null;
+    biggestCap: CallRecord | null;
+    topProphet: { viewer_login: string; points: number } | null;
+  } {
+    const boldestCorrect = this.db.prepare(`SELECT * FROM calls WHERE created_at >= ? AND status = 'correct'
+      ORDER BY boldness DESC, points_awarded DESC, resolved_at ASC LIMIT 1`).get(since) as CallRecord | undefined;
+    const biggestCap = this.db.prepare(`SELECT * FROM calls WHERE created_at >= ? AND status = 'incorrect'
+      ORDER BY boldness DESC, resolved_at ASC LIMIT 1`).get(since) as CallRecord | undefined;
+    const topProphet = this.db.prepare(`SELECT viewer_login, SUM(points_awarded) AS points FROM calls
+      WHERE created_at >= ? AND status = 'correct' GROUP BY viewer_id ORDER BY points DESC, viewer_login COLLATE NOCASE ASC LIMIT 1`)
+      .get(since) as { viewer_login: string; points: number } | undefined;
+    return { boldestCorrect: boldestCorrect ?? null, biggestCap: biggestCap ?? null, topProphet: topProphet ?? null };
+  }
+
   resolveCall(id: number, status: "correct" | "incorrect" | "nuked", now = Date.now()):
     | { ok: true; call: CallRecord }
     | { ok: false; reason: "not_open" | "not_found" } {
