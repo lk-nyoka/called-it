@@ -1,3 +1,5 @@
+import { createPlaybackQueue } from "./playbackQueue.js";
+
 (() => {
   const $ = (id) => document.getElementById(id);
   const juryCard = $("jury-card");
@@ -12,15 +14,21 @@
   let callIndex = 0;
   let activeJury = null;
   let juryTicker;
-  let displayTimer;
   let demoTimer;
   let socket;
   let retryDelay = 500;
   let audioContext;
   try { audioContext = new AudioContext(); } catch { audioContext = undefined; }
 
+  const playback = createPlaybackQueue((event) => {
+    if (!event) showOnly(null);
+    else if (event.type === "jury:start") showJury(event);
+    else if (event.type === "called-it") showCalled(event);
+    else if (event.type === "hall-of-cap") showCap(event);
+  });
+
   function showOnly(card) {
-    for (const item of [juryCard, calledCard, capCard]) item.hidden = item !== card;
+    for (const item of [juryCard, calledCard, capCard]) item.hidden = !card || item !== card;
   }
 
   function updateTicker() {
@@ -42,9 +50,11 @@
   }
 
   function showJury(event) {
-    clearTimeout(displayTimer);
     const durationMs = event.durationMs ?? 10_000;
-    activeJury = { ...event, durationMs, startedAt: Date.now() - Math.max(0, durationMs - (event.remainingMs ?? durationMs)) };
+    const elapsed = Math.max(0, Date.now() - (event.queuedAt ?? Date.now()));
+    const remainingMs = Math.max(0, durationMs - elapsed);
+    if (!remainingMs) { playback.finish("jury:start", event.callId); return; }
+    activeJury = { ...event, durationMs, startedAt: Date.now() - (durationMs - remainingMs) };
     $("jury-call").textContent = `“${event.callText}”`;
     $("receipt-count").textContent = String(event.receipts ?? 0);
     $("cap-count").textContent = String(event.cap ?? 0);
@@ -108,7 +118,6 @@
   }
 
   function showCalled(event) {
-    clearTimeout(displayTimer);
     activeJury = null;
     clearInterval(juryTicker);
     $("called-viewer").textContent = `@${event.viewerLogin}`;
@@ -117,37 +126,36 @@
     $("called-points").textContent = String(event.points);
     showOnly(calledCard);
     playCalledSound();
-    displayTimer = setTimeout(() => { calledCard.hidden = true; }, 8_000);
   }
 
   function showCap(event) {
-    clearTimeout(displayTimer);
     activeJury = null;
     clearInterval(juryTicker);
     $("cap-viewer").textContent = `@${event.viewerLogin}`;
     $("cap-quote").textContent = `“${event.callText}”`;
     showOnly(capCard);
     playCapSound();
-    displayTimer = setTimeout(() => { capCard.hidden = true; }, 7_000);
   }
 
   function handleEvent(event) {
     switch (event.type) {
       case "state":
         setOpenCalls(event.openCalls);
-        if (event.jury) showJury({ type: "jury:start", ...event.jury });
+        if (event.jury) playback.enqueue({ type: "jury:start", ...event.jury, queuedAt: Date.now() });
         break;
-      case "jury:start": showJury(event); break;
-      case "jury:update": updateJury(event); break;
+      case "jury:start": playback.enqueue({ ...event, queuedAt: Date.now() }); break;
+      case "jury:update":
+        playback.update(event);
+        updateJury(event);
+        break;
       case "jury:end":
-        if (activeJury?.callId === event.callId) {
+        if (playback.finish("jury:start", event.callId)) {
           clearInterval(juryTicker);
           activeJury = null;
-          juryCard.hidden = true;
         }
         break;
-      case "called-it": showCalled(event); break;
-      case "hall-of-cap": showCap(event); break;
+      case "called-it": playback.enqueue(event); break;
+      case "hall-of-cap": playback.enqueue(event); break;
     }
   }
 
@@ -180,7 +188,7 @@
     setOpenCalls(calls);
     const cycle = () => {
       demoTimer = setTimeout(() => {
-        showJury({ type: "jury:start", callId: 21, viewerLogin: "pixelprophet", callText: calls[0].text, durationMs: 10_000, receipts: 3, cap: 1 });
+        playback.enqueue({ type: "jury:start", callId: 21, viewerLogin: "pixelprophet", callText: calls[0].text, durationMs: 10_000, receipts: 3, cap: 1, queuedAt: Date.now() });
         let tally = 0;
         const votes = setInterval(() => {
           tally++;
@@ -188,18 +196,13 @@
           if (tally >= 3) clearInterval(votes);
         }, 2_000);
         demoTimer = setTimeout(() => {
-          activeJury = null;
-          clearInterval(juryTicker);
-          juryCard.hidden = true;
-          showCalled({ viewerLogin: calls[0].viewerLogin, callText: calls[0].text, calledAgo: "14m ago", points: 40 });
+          playback.finish("jury:start", 21);
+          playback.enqueue({ type: "called-it", viewerLogin: calls[0].viewerLogin, callText: calls[0].text, calledAgo: "14m ago", points: 40 });
+          playback.enqueue({ type: "hall-of-cap", viewerLogin: calls[2].viewerLogin, callText: calls[2].text });
           demoTimer = setTimeout(() => {
-            showCap({ viewerLogin: calls[2].viewerLogin, callText: calls[2].text });
-            demoTimer = setTimeout(() => {
-              capCard.hidden = true;
-              callIndex = (callIndex + 1) % openCalls.length;
-              updateTicker();
-              cycle();
-            }, 7_000);
+            callIndex = (callIndex + 1) % openCalls.length;
+            updateTicker();
+            cycle();
           }, 8_000);
         }, 10_000);
       }, 2_000);
@@ -216,4 +219,5 @@
 
   if (testMode) runDemo();
   else connect();
+
 })();
