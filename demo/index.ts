@@ -201,8 +201,28 @@ async function runSession(): Promise<void> {
 
   storyTime += 5_000;
   await waitVirtual(5_000);
-  stage("Replay complete: one CALLED IT, one CAP.");
-  console.log("The story clock ends at 13:25. The overlay server is still available. Press Ctrl+C to stop.\n");
+  stage("A viewer asks to see the Prophets leaderboard.");
+  await fakeChat("pixelprophet", "viewer-pixel", "!prophets");
+
+  stage("The stream ends; simulating the Twitch stream.offline event.");
+  broadcastOverlayEvent({ type: "session:recap", recap: store.getSessionRecap(demoClockOrigin) });
+  console.log("  [EVENT] stream.offline — session recap queued behind the leaderboard.");
+  storyTime += 20_000;
+  await wait(20_500);
+  stage("Replay complete: one CALLED IT, one CAP, leaderboard and session recap shown.");
+}
+
+function stopDemo(): void {
+  console.log("Stopping Called It demo…");
+  const active = jury.getState();
+  if (active) jury.cancel(active.callId, false);
+  commandHandler.stop();
+  scheduler.stop();
+  for (const client of sockets.clients) client.close();
+  sockets.close();
+  server.close();
+  store.close();
+  process.exit(0);
 }
 
 async function main(): Promise<void> {
@@ -211,19 +231,9 @@ async function main(): Promise<void> {
     server.listen(PORT, "localhost", resolve);
   });
   console.log(`Demo server listening at http://localhost:${PORT}`);
-  process.once("SIGINT", () => {
-    console.log("\nStopping Called It demo…");
-    const active = jury.getState();
-    if (active) jury.cancel(active.callId, false);
-    commandHandler.stop();
-    scheduler.stop();
-    for (const client of sockets.clients) client.close();
-    sockets.close();
-    server.close();
-    store.close();
-    process.exit(0);
-  });
+  process.once("SIGINT", stopDemo);
   await runSession();
+  stopDemo();
 }
 
 main().catch((error: unknown) => {

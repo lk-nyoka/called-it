@@ -32,7 +32,7 @@ npm ci
 npm run demo
 ```
 
-Open <http://localhost:3000/overlay> and <http://localhost:3000/console> after the server starts. The replay tells a scripted four-minute story in roughly 30 seconds, while the juries keep their real 10-second voting windows. The terminal prints fake chat, transcript, judge evidence, votes, and bot replies. It ends with one **CALLED IT** and one **CAP**, then keeps the server open until `Ctrl+C`.
+Open <http://localhost:3000/overlay> and <http://localhost:3000/console> after the server starts. The narrated story clock advances to 13:45; the replay takes roughly 45 seconds because jury windows and overlay cards play in real time. The terminal prints fake chat, transcript, judge evidence, votes, and bot replies. It ends with one **CALLED IT**, one **CAP**, the leaderboard, and a stream-end recap, then stops automatically.
 
 The demo uses the real call command handler, SQLite call store (in memory), keyword judge, reaction-burst detector, jury manager, and overlay WebSocket. Make sure port 3000 is free before starting it. `npm run dev` is the separate live-Twitch mode.
 
