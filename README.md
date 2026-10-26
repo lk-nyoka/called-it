@@ -1,4 +1,4 @@
-# Called It 🔮
+# Called It 
 
 **Every chat has prophets. Now they get receipts.**
 
