@@ -38,11 +38,21 @@ The demo uses the real call command handler, SQLite call store (in memory), keyw
 
 ## Screenshots
 
-Replace these labeled slots with screenshots from the final build before submitting:
+### CALLED IT celebration
 
-![OBS overlay screenshot placeholder](docs/screenshots/overlay-placeholder.svg)
+![Called It celebration card on the OBS overlay](docs/screenshots/overlay-called-it.png)
 
-![Streamer console screenshot placeholder](docs/screenshots/console-placeholder.svg)
+### Chat jury
+
+![Live jury card and vote tally on the OBS overlay](docs/screenshots/overlay-jury.png)
+
+### Prophets leaderboard
+
+![Prophets leaderboard card on the OBS overlay](docs/screenshots/overlay-leaderboard.png)
+
+### Streamer console
+
+![Called It streamer console with transcript and call controls](docs/screenshots/console.png)
 
 ## Architecture
 
