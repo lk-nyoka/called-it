@@ -148,7 +148,7 @@ async function waitForJury(callId: number): Promise<void> {
 }
 
 async function runSession(): Promise<void> {
-  console.log("Called It · scripted four-minute replay (8× fast-forward; jury timers stay real-time)");
+  console.log("Called It · scripted replay (8× story-time fast-forward; jury timers stay real-time)");
   console.log(`Overlay: http://localhost:${PORT}/overlay`);
   console.log("Fake Twitch chat is printed here. No Twitch login, API key, or .env is needed.\n");
 
@@ -199,10 +199,10 @@ async function runSession(): Promise<void> {
   if (store.getCall(2)?.status !== "incorrect") throw new Error("Call #2 did not resolve as Hall of Cap.");
   stage("The judge was unsure about Call #2; chat voted CAP.");
 
-  storyTime = 240_000;
+  storyTime += 5_000;
   await waitVirtual(5_000);
-  stage("Four-minute replay complete: one CALLED IT, one CAP. The overlay server stays open.");
-  console.log("Keep the overlay open to inspect the final moment. Press Ctrl+C here to stop the demo.\n");
+  stage("Replay complete: one CALLED IT, one CAP.");
+  console.log("The story clock ends at 13:25. The overlay server is still available. Press Ctrl+C to stop.\n");
 }
 
 async function main(): Promise<void> {
