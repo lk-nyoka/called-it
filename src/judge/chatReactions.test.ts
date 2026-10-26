@@ -48,6 +48,18 @@ describe("chat reaction bursts", () => {
     expect(bursts[0]).toMatchObject({ source: "chat", callId: 12, chatters: 8, text: "8 chatters: “the boss died”" });
   });
 
+  it("combines a matching phrase with short reactions from the same burst", () => {
+    const context = messages([
+      { user: "viewer-1", text: "the boss died before the timer" },
+      { user: "viewer-2", text: "he died" },
+      { user: "viewer-3", text: "NOOO" },
+      { user: "viewer-4", text: "no way he did it" },
+    ]);
+    const result = buildChatReactionBursts({ ...call, text: "the boss dies before the timer" }, context);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ chatters: 4, text: "4 chatters: “the boss died before the timer”" });
+  });
+
   it("allows a two-person live test when CHAT_BURST_MIN is set to two", () => {
     const context = messages([
       { user: "helper-1", text: "the boss died", t: 1_100 },

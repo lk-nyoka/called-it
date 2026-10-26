@@ -2,7 +2,7 @@
 
 **Every chat has prophets. Now they get receipts.**
 
-Called It lets Twitch viewers make free-text predictions in chat (`!call he rage-quits before the boss`). An AI judge listens to the stream, and when a call looks like it came true, chat decides in a 10-second jury: **RECEIPTS** or **CAP**. Confirmed calls get a "CALLED IT" moment on stream, a clip, and points on the Prophets leaderboard.
+Called It lets Twitch viewers make free-text predictions in chat (`!call he rage-quits before the boss`). A judge checks streamer speech and chat reactions for evidence. When a call looks like it came true, chat decides in a 10-second jury: **RECEIPTS** or **CAP**. Confirmed calls get a "CALLED IT" moment on stream and points on the Prophets leaderboard.
 
 - Works for any channel: no Affiliate, Channel Points or Bits needed
 - Runs locally and free: EventSub over WebSocket, no hosting
@@ -10,11 +10,24 @@ Called It lets Twitch viewers make free-text predictions in chat (`!call he rage
 
 Built with OpenAI Codex for the Codex x TwitchCon Hackathon.
 
-> 🚧 Work in progress. Setup and run instructions are coming as the build lands.
+## Judge quick start (Windows PowerShell)
 
-## Run locally (Windows PowerShell)
+Requirements: Git and Node.js 20 or newer. Clone the repository, install dependencies, and launch the scripted replay:
 
-Requires Node.js 20 or newer. In PowerShell, from the repository folder:
+```powershell
+git clone https://github.com/lk-nyoka/called-it.git
+cd called-it
+npm ci
+npm run demo
+```
+
+Open <http://localhost:3000/overlay> as soon as the server starts. The replay runs a scripted four-minute story in about 30 seconds; each 10-second jury remains real-time. The terminal prints the fake chat, transcript, judge evidence, votes, and bot replies. It finishes with one **CALLED IT** and one **CAP**, then keeps the overlay server running until you press `Ctrl+C`.
+
+The demo uses the real call command handler, SQLite call store (in memory), keyword judge, reaction-burst detector, jury manager, and overlay WebSocket. It does not need Twitch credentials, `.env`, an OpenAI key, or a public URL. Make sure port 3000 is free before starting it. `npm run dev` is the separate live-Twitch mode.
+
+## Run the live app
+
+From the repository folder:
 
 ```powershell
 npm install
@@ -23,7 +36,7 @@ npm run dev
 
 Open <http://localhost:3000/health>; it returns `{"status":"ok"}`. Stop the server with `Ctrl+C`.
 
-Run checks with `npm test`; `npm run lint` checks TypeScript. `npm run demo` currently confirms the demo scaffold is available.
+Run checks with `npm test`; `npm run lint` checks TypeScript. The demo command above is also the no-credentials end-to-end preview.
 
 ### Authorize Twitch chat
 

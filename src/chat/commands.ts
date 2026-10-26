@@ -214,7 +214,7 @@ export function createChatCommandHandler(
   return { handleChatMessage, isJudgeEnabled: () => judgeEnabled, setJudgeEnabled, stop: () => { if (expiryTimer) clearInterval(expiryTimer); } };
 }
 
-export const callStore = new CallStore();
+export const callStore = new CallStore(process.env.CALLED_IT_DEMO === "1" ? ":memory:" : undefined);
 const juryManager = new JuryManager(callStore, broadcastOverlayEvent, sendChatMessage, (id, result) => resolveCallAndBroadcast(callStore, id, result).ok);
 const defaultHandler = createChatCommandHandler(callStore, sendChatMessage, { scoreBoldness: scoreCallBoldness, jury: juryManager });
 export const handleChatMessage = defaultHandler.handleChatMessage;

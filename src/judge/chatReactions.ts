@@ -4,7 +4,7 @@ import type { JudgeCall } from "./types.js";
 export type ChatBurstConfig = { windowMs: number; minimumChatters: number };
 const DEFAULT_WINDOW_SECONDS = 5;
 const DEFAULT_MIN_CHATTERS = 3;
-const STOP_WORDS = new Set(["a", "an", "and", "are", "as", "at", "be", "but", "by", "did", "do", "does", "for", "from", "he", "her", "him", "i", "in", "is", "it", "its", "me", "my", "of", "on", "or", "she", "so", "that", "the", "their", "them", "they", "this", "to", "was", "we", "were", "with", "you", "your", "way"]);
+const STOP_WORDS = new Set(["a", "an", "and", "are", "as", "at", "be", "before", "but", "by", "did", "do", "does", "for", "from", "he", "her", "him", "i", "in", "is", "it", "its", "me", "my", "of", "on", "or", "she", "so", "that", "the", "their", "them", "they", "this", "to", "was", "we", "were", "with", "you", "your", "way"]);
 const DEATH_WORDS = new Set(["die", "dies", "died", "dead", "death", "deaths", "kill", "kills", "killed", "killing", "rip", "eliminated"]);
 const REACTION_WORDS = new Set(["no", "noo", "nooo", "omg", "wow", "what", "yikes", "bruh", "damn", "insane", "crazy", "unreal"]);
 
@@ -71,7 +71,7 @@ export function buildChatReactionBursts(
     const hasCallMatch = window.some((entry) => callOverlap(call, tokensById.get(entry.id) ?? []) >= 0.5);
     const group = window.filter((entry) => {
       const tokens = tokensById.get(entry.id) ?? [];
-      return similarity(anchorTokens, tokens) >= 0.34 || (hasCallMatch && isGenericReaction(tokens));
+      return similarity(anchorTokens, tokens) >= 0.3 || (hasCallMatch && isGenericReaction(tokens));
     });
     const distinctIds = new Set(group.map((entry) => entry.chatterId));
     if (distinctIds.size < config.minimumChatters) continue;
