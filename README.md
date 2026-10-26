@@ -10,20 +10,59 @@ Called It lets Twitch viewers make free-text predictions in chat (`!call he rage
 
 Built with OpenAI Codex for the Codex x TwitchCon Hackathon.
 
-## Judge quick start (Windows PowerShell)
+## Judge quick start
 
-Requirements: Git and Node.js 20 or newer. Clone the repository, install dependencies, and launch the scripted replay:
+Requirements: Git and Node.js 20 or newer. The scripted demo needs no Twitch account, `.env`, OpenAI key, or public URL.
 
-```powershell
+### macOS / Linux
+
+```sh
 git clone https://github.com/lk-nyoka/called-it.git
 cd called-it
 npm ci
 npm run demo
 ```
 
-Open <http://localhost:3000/overlay> as soon as the server starts. The replay runs a scripted four-minute story in about 30 seconds; each 10-second jury remains real-time. The terminal prints the fake chat, transcript, judge evidence, votes, and bot replies. It finishes with one **CALLED IT** and one **CAP**, then keeps the overlay server running until you press `Ctrl+C`.
+### Windows PowerShell
 
-The demo uses the real call command handler, SQLite call store (in memory), keyword judge, reaction-burst detector, jury manager, and overlay WebSocket. It does not need Twitch credentials, `.env`, an OpenAI key, or a public URL. Make sure port 3000 is free before starting it. `npm run dev` is the separate live-Twitch mode.
+```powershell
+git clone https://github.com/lk-nyoka/called-it.git
+Set-Location called-it
+npm ci
+npm run demo
+```
+
+Open <http://localhost:3000/overlay> and <http://localhost:3000/console> after the server starts. The replay tells a scripted four-minute story in roughly 30 seconds, while the juries keep their real 10-second voting windows. The terminal prints fake chat, transcript, judge evidence, votes, and bot replies. It ends with one **CALLED IT** and one **CAP**, then keeps the server open until `Ctrl+C`.
+
+The demo uses the real call command handler, SQLite call store (in memory), keyword judge, reaction-burst detector, jury manager, and overlay WebSocket. Make sure port 3000 is free before starting it. `npm run dev` is the separate live-Twitch mode.
+
+## Screenshots
+
+Replace these labeled slots with screenshots from the final build before submitting:
+
+![OBS overlay screenshot placeholder](docs/screenshots/overlay-placeholder.svg)
+
+![Streamer console screenshot placeholder](docs/screenshots/console-placeholder.svg)
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Twitch["Twitch EventSub WebSocket"] --> Context["5-minute context window"]
+  Console["Chrome console\nmic transcript + controls"] --> Context
+  Context --> Judge["Keyword judge\noptional OpenAI judge"]
+  Judge --> Jury["10-second chat jury"]
+  Chat["Twitch chat commands\n!call / !receipts / !cap"] --> Calls["Call store\nSQLite"]
+  Jury --> Calls
+  Calls --> Events["Local WebSocket events"]
+  Events --> Overlay["OBS overlay"]
+  Events --> Console
+  Calls --> Helix["Helix\nchat replies + live clip"]
+  Twitch --> Recap["stream.offline recap"]
+  Calls --> Recap --> Events
+```
+
+Twitch, the console, and the judge feed the same local call/context pipeline. The server sends events to both browser surfaces; the OBS overlay shows the jury and stream moments, while the console shows transcript, evidence, and controls.
 
 ## Run the live app
 
@@ -44,13 +83,15 @@ The bot uses two separate Twitch logins so it can read chat as the bot account a
 
 1. Add the Twitch app's client ID, client secret, redirect URL, `BROADCASTER_LOGIN`, and `BOT_LOGIN` to `.env`. Do not share or commit `.env`. The redirect URL must exactly match `http://localhost:3000/auth/callback` in the Twitch Developer Console.
 2. Start the app with `npm run dev` and open <http://localhost:3000/auth/bot>. Sign in as the account named by `BOT_LOGIN` (for example, `calleditbot`) and approve chat read, chat send, and bot identity permissions.
-3. Open <http://localhost:3000/auth/broadcaster>. Sign in as the channel owner named by `BROADCASTER_LOGIN` and approve the bot's channel permission.
+3. Open <http://localhost:3000/auth/broadcaster>. Sign in as the channel owner named by `BROADCASTER_LOGIN` and approve the bot's channel permission and `clips:edit` for live clip creation.
 4. Check <http://localhost:3000/auth/status>. It should show both logins. Tokens are saved locally in `data/tokens.json`, which Git ignores.
 5. In the broadcaster's Twitch chat, type `!help` to see the current commands.
 
 Use separate browser profiles or log out between the two authorizations so Twitch doesn't silently reuse the first account. OAuth codes are short-lived and only used on the local callback. The app refreshes tokens when needed. If the wrong Twitch account is authorized, the callback rejects it and does not save that token.
 
-The bot requests `user:read:chat`, `user:write:chat`, and `user:bot`; the broadcaster grants `channel:bot`. Chat arrives over EventSub WebSocket, and replies use Twitch's Send Chat Message API. If subscription is rejected, make the bot account a moderator in the broadcaster's channel, then restart and authorize again.
+The bot requests `user:read:chat`, `user:write:chat`, and `user:bot`; the broadcaster grants `channel:bot` and `clips:edit`. Chat arrives over EventSub WebSocket, and replies use Twitch's Send Chat Message API. If subscription is rejected, make the bot account a moderator in the broadcaster's channel, then restart and authorize again.
+
+If you already authorized the broadcaster before adding clips, open <http://localhost:3000/auth/broadcaster> again and approve the new `clips:edit` permission. The bot account does not need to sign in again. Clip creation is skipped unless the broadcaster is live and the stored token includes that scope; any Helix failure is quiet. Twitch's `stream.offline` event automatically shows a recap of the session's boldest correct call, biggest CAP, and top prophet.
 
 ### Chat commands available now
 
@@ -67,7 +108,7 @@ The bot requests `user:read:chat`, `user:write:chat`, and `user:bot`; the broadc
 
 ### OBS overlay
 
-Run the server and open <http://localhost:3000/overlay?test=1> in a browser to preview the rotating ticker, jury countdown and tally, CALLED IT card, and Hall of Cap card. The preview uses sample data and synthetic Web Audio tones, so it needs no Twitch chat activity.
+Run the server and open <http://localhost:3000/overlay?test=1> in a browser to preview the rotating ticker, jury countdown and tally, CALLED IT card, Hall of Cap, leaderboard, and session recap. The preview uses sample data and synthetic Web Audio tones, so it needs no Twitch chat activity.
 
 To add it to OBS Studio:
 
@@ -77,7 +118,7 @@ To add it to OBS Studio:
 4. Click **OK**. The page background is transparent; place the source above your game or camera sources.
 5. When you are ready to use real calls, change the URL to `http://localhost:3000/overlay`.
 
-The overlay receives open-call snapshots, active jury state, live tally updates, and celebration/cap events over the local `/ws` WebSocket. Its jury card displays `!receipts` and `!cap`. The test preview simulates the jury countdown and changing vote tally.
+The overlay receives open-call snapshots, active jury state, live tally updates, and celebration/cap/leaderboard/recap events over the local `/ws` WebSocket. Its jury card displays `!receipts` and `!cap`. A CALLED IT card holds for five seconds and a Hall of Cap card for three before the next jury begins its full voting window. The `!prophets` card stays up for eight seconds.
 
 ### Streamer console
 
@@ -106,3 +147,11 @@ Incoming Twitch raids are included when the EventSub subscription succeeds. Twit
 The console is intended for local use. Its write APIs reject browser requests from a different origin.
 
 See [`AGENTS.md`](AGENTS.md) for the full spec and [`docs/CODEX_PLAN.md`](docs/CODEX_PLAN.md) for the build plan.
+
+## How I built it with Codex
+
+- `AGENTS.md` served as the project spec: it defined the stack, no-cost/local constraints, command rules, judge contract, and overlay behavior.
+- Work progressed as small, reviewable steps using prompts for the foundation, Twitch sign-in/chat, SQLite commands, overlay, console, judge, jury, reaction bursts, demo, and polish.
+- Each feature was checked with focused Vitest coverage and TypeScript linting as its behavior was added; the demo provides a no-credentials run through the real pipeline.
+- Review feedback drove follow-up fixes, including the serialized overlay queue (so the celebration is not covered by the next jury) and keyword-judge negation handling (so “did not find it” does not count as a match).
+- Commits keep each feature step and review fix visible in the project history.
