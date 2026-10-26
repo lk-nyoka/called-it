@@ -15,6 +15,7 @@ import { createPlaybackQueue } from "./playbackQueue.js";
   let activeJury = null;
   let juryTicker;
   let demoTimer;
+  let pointsFrame;
   let socket;
   let retryDelay = 500;
   let audioContext;
@@ -123,9 +124,27 @@ import { createPlaybackQueue } from "./playbackQueue.js";
     $("called-viewer").textContent = `@${event.viewerLogin}`;
     $("called-quote").textContent = `“${event.callText}”`;
     $("called-age").textContent = `called ${event.calledAgo}`;
-    $("called-points").textContent = String(event.points);
+    animatePoints(Number(event.points) || 0);
+    calledCard.classList.remove("celebrating");
+    void calledCard.offsetWidth;
+    calledCard.classList.add("celebrating");
     showOnly(calledCard);
     playCalledSound();
+  }
+
+  function animatePoints(target) {
+    cancelAnimationFrame(pointsFrame);
+    const output = $("called-points");
+    if (reducedMotion) { output.textContent = String(target); return; }
+    const startedAt = performance.now();
+    const duration = 1_100;
+    const tick = (now) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      output.textContent = String(Math.round(target * (1 - (1 - progress) ** 3)));
+      if (progress < 1) pointsFrame = requestAnimationFrame(tick);
+    };
+    output.textContent = "0";
+    pointsFrame = requestAnimationFrame(tick);
   }
 
   function showCap(event) {

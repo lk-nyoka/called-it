@@ -55,15 +55,23 @@ body { color: var(--paper); }
 
 .moment-card { bottom: 50%; width: min(900px, calc(100vw - 70px)); padding: 42px 54px 38px; transform: translate(-50%, 50%); text-align: center; animation: card-in .42s cubic-bezier(.2,.8,.2,1) both; }
 .called-card { border-color: rgba(199,255,94,.5); background: radial-gradient(ellipse at 50% 0%, rgba(130, 182, 48, .17), transparent 56%), linear-gradient(145deg, rgba(20, 25, 20, .98), rgba(8, 12, 10, .97)); }
+.called-card.celebrating { animation: celebration-pulse .95s cubic-bezier(.16,1,.3,1) both; box-shadow: 0 30px 100px rgba(0,0,0,.52), 0 0 90px rgba(199,255,94,.23), inset 0 1px 0 rgba(255,255,255,.08); }
+.called-card { width: min(1500px, calc(100vw - 80px)); padding: 72px 82px 64px; }
 .moment-spark { position: absolute; top: 20px; right: 29px; color: var(--lime); font-size: 32px; }
 .lime-text { justify-content: center; color: var(--lime); }
 .moment-card h1 { margin: 14px 0 3px; color: #fff; font-size: clamp(62px, 7vw, 106px); line-height: .94; font-weight: 950; letter-spacing: -.075em; }
+.called-card h1 { margin: 20px 0 12px; font-size: clamp(94px, 13vw, 205px); }
 .period { color: var(--lime); }
 .viewer-name { margin: 13px 0 0; color: var(--lime); font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+.called-card .viewer-name { margin-top: 20px; font-size: clamp(30px, 3.1vw, 46px); }
 blockquote { max-width: 730px; margin: 20px auto 0; color: #f4f5f2; font-size: clamp(26px, 3vw, 42px); line-height: 1.15; font-weight: 650; letter-spacing: -.04em; }
+.called-card blockquote { max-width: 1280px; margin-top: 32px; font-size: clamp(38px, 4vw, 62px); }
 .moment-meta { justify-content: center; gap: 17px; margin-top: 27px; color: var(--muted); font-size: 17px; font-weight: 650; }
+.called-card .moment-meta { gap: 24px; margin-top: 38px; font-size: 26px; }
 .points-pill { padding: 10px 15px; border: 1px solid rgba(199,255,94,.25); border-radius: 999px; background: rgba(199,255,94,.1); color: var(--lime); font-size: 14px; font-weight: 850; letter-spacing: .08em; }
+.called-card .points-pill { padding: 17px 25px; font-size: 23px; }
 .points-pill b { font-size: 18px; }
+.called-card .points-pill b { font-size: 30px; }
 
 .cap-card { border-color: rgba(255,111,145,.42); background: radial-gradient(ellipse at 50% 0%, rgba(255, 73, 115, .16), transparent 58%), linear-gradient(145deg, rgba(34, 19, 26, .98), rgba(13, 9, 13, .97)); }
 .cap-stamp { position: absolute; top: 21px; right: 28px; color: var(--pink); font-size: 32px; }
@@ -103,6 +111,7 @@ blockquote { max-width: 730px; margin: 20px auto 0; color: #f4f5f2; font-size: c
 .connection-state.connected i { background: var(--lime); box-shadow: 0 0 10px var(--lime); }
 
 @keyframes card-in { from { opacity: 0; filter: blur(8px); } to { opacity: 1; filter: blur(0); } }
+@keyframes celebration-pulse { 0% { opacity: 0; filter: blur(8px); transform: translate(-50%, 50%) scale(.82); } 58% { opacity: 1; filter: blur(0); transform: translate(-50%, 50%) scale(1.035); } 100% { opacity: 1; transform: translate(-50%, 50%) scale(1); } }
 @keyframes pulse { 50% { opacity: .48; transform: scale(.8); } }
 
 @media (max-width: 850px) {
@@ -114,6 +123,13 @@ blockquote { max-width: 730px; margin: 20px auto 0; color: #f4f5f2; font-size: c
   .ticker-prompt { display: none; }
   .card { bottom: 100px; }
   .moment-card { bottom: 50%; padding: 30px 24px; }
+  .called-card { width: calc(100vw - 28px); padding: 38px 22px; }
+  .called-card h1 { font-size: clamp(64px, 14vw, 112px); }
+  .called-card .viewer-name { font-size: 28px; }
+  .called-card blockquote { font-size: clamp(28px, 6vw, 44px); }
+  .called-card .moment-meta { margin-top: 25px; font-size: 18px; }
+  .called-card .points-pill { padding: 12px 16px; font-size: 16px; }
+  .called-card .points-pill b { font-size: 22px; }
   .jury-card { padding: 22px; }
 }
 
