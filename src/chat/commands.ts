@@ -44,6 +44,12 @@ function callSnapshot(call: { id: number; viewer_login: string; text: string; cr
   return { id: call.id, viewerLogin: call.viewer_login, text: call.text, createdAt: call.created_at, boldness: call.boldness };
 }
 
+export function formatCallConfirmation(call: { viewer_login: string; text: string; created_at: number; points_awarded: number }, now = Date.now()): string {
+  const minutes = Math.floor(Math.max(0, now - call.created_at) / 60_000);
+  const calledAgo = minutes < 1 ? "just now" : `${minutes}m ago`;
+  return `@${call.viewer_login} CALLED IT ${calledAgo}: ‘${call.text}’ +${call.points_awarded} pts`;
+}
+
 function publishOpenCalls(store: CallStore): void {
   broadcastOverlayEvent({ type: "state", openCalls: store.listOpenCalls().map(callSnapshot) });
 }
@@ -77,6 +83,7 @@ export function createChatCommandHandler(
   options: { expiryTimer?: boolean; scoreBoldness?: (text: string) => Promise<number>; jury?: JuryManager } = {},
 ): { handleChatMessage: (event: ChatMessageEvent) => Promise<void>; isJudgeEnabled: () => boolean; setJudgeEnabled: (enabled: boolean) => void; stop: () => void } {
   let judgeEnabled = true;
+  const rejectedVotesWithoutJury = new Set<string>();
   const expiryTimer = options.expiryTimer === false ? undefined : setInterval(() => {
     if (store.expireCalls() > 0) publishOpenCalls(store);
   }, 15_000);
@@ -92,9 +99,11 @@ export function createChatCommandHandler(
 
     try {
     if (/^!receipts$/iu.test(text) || /^!cap$/iu.test(text)) {
-      await reply(event, options.jury
+      const response = options.jury
         ? await options.jury.vote(viewerId, login, text.toLowerCase() === "!receipts" ? "receipts" : "cap")
-        : "There is no jury open right now.");
+        : rejectedVotesWithoutJury.has(viewerId) ? undefined : "There is no jury open right now.";
+      if (!options.jury) rejectedVotesWithoutJury.add(viewerId);
+      if (response) await reply(event, response);
       return;
     }
 
@@ -177,7 +186,7 @@ export function createChatCommandHandler(
         await reply(event, result.reason === "not_found" ? `Call #${id} was not found.` : `Call #${id} is no longer open.`);
       } else {
         if (action === "yes") {
-          await reply(event, `✅ Call #${id} confirmed! @${result.call.viewer_login} earned ${result.call.points_awarded} pts.`);
+          await reply(event, formatCallConfirmation(result.call));
         } else if (action === "no") {
           await reply(event, `❌ Call #${id} marked incorrect.`);
         } else {
@@ -215,7 +224,11 @@ export function createChatCommandHandler(
 }
 
 export const callStore = new CallStore(process.env.CALLED_IT_DEMO === "1" ? ":memory:" : undefined);
-const juryManager = new JuryManager(callStore, broadcastOverlayEvent, sendChatMessage, (id, result) => resolveCallAndBroadcast(callStore, id, result).ok);
+const juryManager = new JuryManager(callStore, broadcastOverlayEvent, sendChatMessage, (id, result) => {
+  const resolved = resolveCallAndBroadcast(callStore, id, result);
+  if (!resolved.ok) return false;
+  return result === "correct" ? formatCallConfirmation(resolved.call) : true;
+});
 const defaultHandler = createChatCommandHandler(callStore, sendChatMessage, { scoreBoldness: scoreCallBoldness, jury: juryManager });
 export const handleChatMessage = defaultHandler.handleChatMessage;
 export const isJudgeEnabled = defaultHandler.isJudgeEnabled;
@@ -241,6 +254,9 @@ export function enqueueJury(callId: number, confidence: number): boolean {
 export function resolveWithJuryOverride(id: number, action: "correct" | "incorrect" | "nuked") {
   juryManager.cancel(id, false);
   const result = resolveCallAndBroadcast(callStore, id, action);
+  if (result.ok && action === "correct") {
+    void sendChatMessage(formatCallConfirmation(result.call)).catch(() => console.error(`Could not announce confirmation for Call #${id}.`));
+  }
   juryManager.resumeQueue();
   return result;
 }

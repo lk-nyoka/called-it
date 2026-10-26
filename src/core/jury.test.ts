@@ -33,13 +33,24 @@ describe("jury voting", () => {
     expect(messages[0]).toContain("!receipts or !cap");
   });
 
-  it("blocks the author and counts only one vote per viewer", async () => {
+  it("blocks the author, counts each viewer once, and stays quiet for accepted votes", async () => {
     setup();
     await jury.open(1);
     expect(await jury.vote("author-id", "author", "receipts")).toBe("You can’t vote on your own call.");
-    expect(await jury.vote("voter", "voter", "receipts")).toBe("Vote counted, @voter.");
-    expect(await jury.vote("voter", "voter", "cap")).toBe("You already voted on this jury.");
+    expect(await jury.vote("author-id", "author", "cap")).toBeUndefined();
+    expect(await jury.vote("voter", "voter", "receipts")).toBeUndefined();
+    expect(await jury.vote("voter", "voter", "cap")).toBeUndefined();
     expect(jury.getState()).toMatchObject({ receipts: 1, cap: 0 });
+  });
+
+  it("replies once per viewer when no jury is open", async () => {
+    setup();
+    expect(await jury.vote("voter", "voter", "receipts")).toBe("There is no jury open right now.");
+    expect(await jury.vote("voter", "voter", "cap")).toBeUndefined();
+    await jury.open(1);
+    await jury.vote("voter", "voter", "receipts");
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(await jury.vote("voter", "voter", "cap")).toBe("There is no jury open right now.");
   });
 
   it("resolves a receipts majority and awards points through the resolver", async () => {
@@ -118,5 +129,6 @@ describe("jury voting", () => {
     expect(store.getCall(1)?.status).toBe("open");
     expect(jury.enqueue(1, 0.9)).toBe(false);
     expect(jury.getState()?.callId).toBe(2);
+    expect(messages).toContain("Jury is open for Call #2! Vote !receipts or !cap for 10 seconds.");
   });
 });

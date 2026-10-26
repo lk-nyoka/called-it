@@ -19,7 +19,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const overlayDirectory = path.resolve(here, "../web/overlay");
 
 process.env.CALLED_IT_DEMO = "1";
-const { createChatCommandHandler, resolveCallAndBroadcast } = await import("../src/chat/commands.js");
+const { createChatCommandHandler, resolveCallAndBroadcast, formatCallConfirmation } = await import("../src/chat/commands.js");
 
 const store = new CallStore(":memory:");
 const context = new ContextBuffer();
@@ -60,7 +60,11 @@ jury = new JuryManager(
   store,
   broadcastOverlayEvent,
   logChat,
-  (id, result) => resolveCallAndBroadcast(store, id, result).ok,
+  (id, result) => {
+    const resolved = resolveCallAndBroadcast(store, id, result);
+    if (!resolved.ok) return false;
+    return result === "correct" ? formatCallConfirmation(resolved.call) : true;
+  },
   JURY_MS,
 );
 
@@ -79,9 +83,11 @@ const scheduler = new JudgeScheduler({
     (suggestions) => broadcastOverlayEvent({ type: "judge:suggestions", suggestions }),
     logChat,
     (suggestion) => {
-      if (jury.enqueue(suggestion.callId, suggestion.confidence)) {
+      const queued = jury.enqueue(suggestion.callId, suggestion.confidence);
+      if (queued) {
         console.log(`  [JUDGE] Queued Call #${suggestion.callId} (${Math.round(suggestion.confidence * 100)}% confidence).`);
       }
+      return jury.getState()?.callId === suggestion.callId ? "opened" : queued ? "queued" : undefined;
     },
   ),
 });
@@ -155,7 +161,7 @@ async function runSession(): Promise<void> {
     await wait(180);
   }
 
-  stage("Keyword judge evaluates transcript plus distinct-chatter burst evidence.");
+  stage("Keyword judge evaluates transcript plus distinct-chatter burst evidence; it is unsure about Call #2.");
   const suggestions = await scheduler.runOnce();
   if (suggestions.length !== 2) throw new Error(`Expected two judge flags, got ${suggestions.length}.`);
   await waitForJury(1);
@@ -175,6 +181,7 @@ async function runSession(): Promise<void> {
   storyTime += 80_000;
   await wait(JURY_MS + 250);
   if (store.getCall(2)?.status !== "incorrect") throw new Error("Call #2 did not resolve as Hall of Cap.");
+  stage("The judge was unsure about Call #2; chat voted CAP.");
 
   storyTime = 240_000;
   await waitVirtual(5_000);

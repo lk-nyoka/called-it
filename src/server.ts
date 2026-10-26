@@ -23,7 +23,10 @@ const judgeScheduler = new JudgeScheduler({
   publish: createJudgeAnnouncementPublisher(
     (suggestions) => broadcastOverlayEvent({ type: "judge:suggestions", suggestions }),
     sendChatMessage,
-    (suggestion) => { enqueueJury(suggestion.callId, suggestion.confidence); },
+    (suggestion) => {
+      const queued = enqueueJury(suggestion.callId, suggestion.confidence);
+      return getActiveJury()?.callId === suggestion.callId ? "opened" : queued ? "queued" : undefined;
+    },
   ),
 });
 

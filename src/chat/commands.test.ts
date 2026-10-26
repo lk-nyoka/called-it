@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createChatCommandHandler, type ChatMessageEvent } from "./commands.js";
+import { createChatCommandHandler, formatCallConfirmation, type ChatMessageEvent } from "./commands.js";
 import { containsBlockedWord } from "./filter.js";
 import { CallStore } from "../core/callStore.js";
 import { JuryManager } from "../core/jury.js";
@@ -10,6 +10,15 @@ describe("chat commands", () => {
   let handler: ReturnType<typeof createChatCommandHandler>;
   let sent: string[];
   afterEach(() => { handler?.stop(); store?.close(); });
+
+  it("formats a confirmation with the age and points from the call", () => {
+    expect(formatCallConfirmation({
+      viewer_login: "pixelprophet",
+      text: "the boss dies before the timer",
+      created_at: 1_000,
+      points_awarded: 40,
+    }, 121_000)).toBe("@pixelprophet CALLED IT 2m ago: ‘the boss dies before the timer’ +40 pts");
+  });
 
   function setup() {
     store = new CallStore(":memory:");
@@ -57,7 +66,6 @@ describe("chat commands", () => {
     await handler.handleChatMessage(event("!cap"));
     expect(sent).toEqual([
       expect.stringContaining("Vote during a jury with !receipts or !cap"),
-      "There is no jury open right now.",
       "There is no jury open right now.",
     ]);
   });
@@ -115,7 +123,7 @@ describe("chat commands", () => {
       await handler.handleChatMessage(broadcaster);
       await handler.handleChatMessage({ ...broadcaster, message: { text: "!yes 1" } });
       expect(store.getCall(1)?.status).toBe("correct");
-      expect(sent.at(-1)).toContain("Call #1 confirmed");
+      expect(sent.at(-1)).toBe("@owner CALLED IT just now: ‘my own prediction comes true’ +20 pts");
       await handler.handleChatMessage({ ...broadcaster, message: { text: "!no 999" } });
       expect(sent.at(-1)).toBe("Call #999 was not found.");
     } finally {

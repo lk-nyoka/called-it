@@ -9,7 +9,8 @@ const STOP_WORDS = new Set([
 const NUMBER_WORDS: Record<string, number> = {
   one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
 };
-const NEGATORS = new Set(["not", "never", "no", "nothing", "didn't", "didn’t", "doesn't", "doesn’t", "isn't", "isn’t", "wasn't", "wasn’t", "weren't", "weren’t", "won't", "won’t", "can't", "can’t", "cannot", "without", "failed"]);
+const NEGATORS = new Set(["not", "never", "no", "nothing", "didn't", "didn’t", "doesn't", "doesn’t", "isn't", "isn’t", "wasn't", "wasn’t", "weren't", "weren’t", "won't", "won’t", "can't", "can’t", "cannot", "without", "failed", "fail", "miss"]);
+const NEGATION_PATTERN = /\b(?:not|never|no|didn['’]t|doesn['’]t|isn['’]t|wasn['’]t|weren['’]t|won['’]t|can['’]t|cannot|without|failed\s+to|missed)\b/iu;
 
 function normalize(token: string): string {
   let word = token.toLowerCase();
@@ -55,13 +56,19 @@ function confidenceFor(callText: string, contextText: string): number | undefine
   const terms = keyTerms(callText);
   const tokens = words(contextText);
   if (terms.length === 0) return undefined;
-  const matched = terms.filter((term) => {
+  let matched = 0;
+  let negated = false;
+  for (const term of terms) {
     const index = tokens.indexOf(term);
-    return index >= 0 && !hasNearbyNegation(tokens, index);
-  });
+    if (index < 0) continue;
+    matched++;
+    if (hasNearbyNegation(tokens, index)) negated = true;
+  }
   const minimumMatches = terms.length === 1 ? 1 : Math.max(2, Math.ceil(terms.length * 0.4));
-  if (matched.length < minimumMatches) return undefined;
-  return Math.min(0.95, 0.6 + (matched.length / terms.length) * 0.35);
+  if (matched < minimumMatches) return undefined;
+  const confidence = 0.6 + (matched / terms.length) * 0.35;
+  const penalty = negated || NEGATION_PATTERN.test(contextText) ? 0.25 : 0;
+  return Math.max(0, Math.min(0.95, confidence - penalty));
 }
 
 export class KeywordJudge implements JudgeProvider {

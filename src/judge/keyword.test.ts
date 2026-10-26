@@ -20,12 +20,30 @@ describe("KeywordJudge", () => {
     expect(result.candidates).toEqual([]);
   });
 
-  it("does not flag a prediction when the evidence explicitly negates it", async () => {
+  it("lowers confidence when matched evidence is negated", async () => {
     const result = await judge.evaluate({
       calls: [{ id: 10, text: "Mira finds the golden key", createdAt: 1_000 }],
       context: [{ t: 1_100, source: "speech", text: "Mira does not find the golden key." }],
     });
-    expect(result.candidates).toEqual([]);
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0]?.confidence).toBeCloseTo(0.7);
+    expect(result.candidates[0]?.confidence).toBeLessThanOrEqual(0.7);
+  });
+
+  it.each([
+    "Mira does not find the golden key.",
+    "Mira didn’t find the golden key.",
+    "Mira never finds the golden key.",
+    "Mira has no golden key and did not find one.",
+    "Mira failed to find the golden key.",
+    "Mira missed the golden key.",
+  ])("lowers confidence for simple negation: %s", async (text) => {
+    const result = await judge.evaluate({
+      calls: [{ id: 10, text: "Mira finds the golden key", createdAt: 1_000 }],
+      context: [{ t: 1_100, source: "speech", text }],
+    });
+    expect(result.candidates).toHaveLength(1);
+    expect(result.candidates[0]?.confidence).toBeLessThanOrEqual(0.7);
   });
 
   it("flags a partly supported prediction at the candidate threshold", async () => {
