@@ -13,6 +13,7 @@ import { createPlaybackQueue } from "./playbackQueue.js";
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const testMode = new URLSearchParams(location.search).get("test") === "1";
   let openCalls = [];
+  let hasHadCalls = false;
   let callIndex = 0;
   let activeJury = null;
   let juryTicker;
@@ -38,7 +39,7 @@ import { createPlaybackQueue } from "./playbackQueue.js";
 
   function updateTicker() {
     if (!openCalls.length) {
-      tickerCall.textContent = "Waiting for the first prediction…";
+      tickerCall.textContent = hasHadCalls ? "No open calls. Type !call to make yours" : "Waiting for the first prediction…";
       tickerIndex.textContent = "0 / 0";
       return;
     }
@@ -48,8 +49,9 @@ import { createPlaybackQueue } from "./playbackQueue.js";
     tickerIndex.textContent = `${callIndex + 1} / ${openCalls.length}`;
   }
 
-  function setOpenCalls(calls) {
+  function setOpenCalls(calls, previouslyHadCalls = false) {
     openCalls = Array.isArray(calls) ? calls : [];
+    hasHadCalls ||= previouslyHadCalls || openCalls.length > 0;
     callIndex = openCalls.length ? callIndex % openCalls.length : 0;
     updateTicker();
   }
@@ -190,7 +192,7 @@ import { createPlaybackQueue } from "./playbackQueue.js";
   function handleEvent(event) {
     switch (event.type) {
       case "state":
-        setOpenCalls(event.openCalls);
+        setOpenCalls(event.openCalls, event.hasHadCalls);
         if (event.jury) playback.enqueue({ type: "jury:start", ...event.jury, queuedAt: Date.now() });
         break;
       case "jury:start": playback.enqueue({ ...event, queuedAt: Date.now() }); break;

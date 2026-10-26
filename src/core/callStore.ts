@@ -102,6 +102,10 @@ export class CallStore {
       .all(limit) as Array<{ viewer_id: string; viewer_login: string; points: number }>;
   }
 
+  hasAnyCalls(): boolean {
+    return Boolean(this.db.prepare("SELECT 1 FROM calls LIMIT 1").get());
+  }
+
   getSessionRecap(since: number): {
     boldestCorrect: CallRecord | null;
     biggestCap: CallRecord | null;

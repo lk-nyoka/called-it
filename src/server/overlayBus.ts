@@ -12,7 +12,7 @@ export type SessionRecap = {
   topProphet: { viewer_login: string; points: number } | null;
 };
 export type OverlayEvent =
-  | { type: "state"; openCalls: OverlayCall[]; jury?: OverlayJury }
+  | { type: "state"; openCalls: OverlayCall[]; hasHadCalls?: boolean; jury?: OverlayJury }
   | { type: "jury:start"; callId: number; viewerLogin: string; callText: string; durationMs?: number; receipts?: number; cap?: number }
   | { type: "jury:update"; callId: number; receipts: number; cap: number }
   | { type: "jury:end"; callId: number }
@@ -26,12 +26,17 @@ export type OverlayEvent =
 
 let overlayServer: WebSocketServer | undefined;
 
-export function attachOverlayBus(server: Server, getOpenCalls: () => OverlayCall[], getJury?: () => OverlayJury | undefined): WebSocketServer {
+export function attachOverlayBus(
+  server: Server,
+  getOpenCalls: () => OverlayCall[],
+  getJury?: () => OverlayJury | undefined,
+  getHasHadCalls: () => boolean = () => getOpenCalls().length > 0,
+): WebSocketServer {
   const sockets = new WebSocketServer({ noServer: true });
   overlayServer = sockets;
   sockets.on("connection", (client) => {
     const jury = getJury?.();
-    client.send(JSON.stringify({ type: "state", openCalls: getOpenCalls(), ...(jury ? { jury } : {}) } satisfies OverlayEvent));
+    client.send(JSON.stringify({ type: "state", openCalls: getOpenCalls(), hasHadCalls: getHasHadCalls(), ...(jury ? { jury } : {}) } satisfies OverlayEvent));
   });
   server.on("upgrade", (request: IncomingMessage, socket, head) => {
     const pathname = new URL(request.url ?? "/", "http://localhost").pathname;

@@ -36,6 +36,7 @@ describe("overlay WebSocket bus", () => {
     expect(await initialMessage).toEqual({
       type: "state",
       openCalls: [{ id: 7, viewerLogin: "streamprophet", text: "the boss drops a key", createdAt: 1, boldness: 2 }],
+      hasHadCalls: true,
       jury: { callId: 7, viewerLogin: "streamprophet", callText: "the boss drops a key", durationMs: 10_000, remainingMs: 8_500, receipts: 2, cap: 1 },
     });
 

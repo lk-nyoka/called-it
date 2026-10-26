@@ -147,6 +147,6 @@ if (process.env.NODE_ENV !== "test") {
     text: call.text,
     createdAt: call.created_at,
     boldness: call.boldness,
-  })), getActiveJury);
+  })), getActiveJury, () => callStore.hasAnyCalls());
   judgeScheduler.start();
 }

@@ -51,7 +51,7 @@ export function formatCallConfirmation(call: { viewer_login: string; text: strin
 }
 
 function publishOpenCalls(store: CallStore): void {
-  broadcastOverlayEvent({ type: "state", openCalls: store.listOpenCalls().map(callSnapshot) });
+  broadcastOverlayEvent({ type: "state", openCalls: store.listOpenCalls().map(callSnapshot), hasHadCalls: store.hasAnyCalls() });
 }
 
 export function resolveCallAndBroadcast(

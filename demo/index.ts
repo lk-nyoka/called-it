@@ -55,7 +55,7 @@ const activeJury = () => {
     cap: state.cap,
   } : undefined;
 };
-const sockets = attachOverlayBus(server, openCalls, activeJury);
+const sockets = attachOverlayBus(server, openCalls, activeJury, () => store.hasAnyCalls());
 
 function logChat(message: string): Promise<void> {
   console.log(`  [BOT] ${message}`);
