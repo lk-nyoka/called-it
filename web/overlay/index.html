@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Called It — Twitch overlay</title>
+    <link rel="stylesheet" href="/overlay/overlay.css">
+  </head>
+  <body>
+    <main class="stage" aria-live="polite">
+      <section id="jury-card" class="card jury-card" hidden aria-label="Chat jury">
+        <div class="card-topline"><span class="eyebrow"><i class="status-dot"></i> CHAT JURY</span><span id="jury-time" class="countdown">10.0s</span></div>
+        <p id="jury-call" class="jury-call"></p>
+        <div class="vote-row">
+          <div class="vote-label receipts-label"><span>RECEIPTS <small>!receipts</small></span><strong id="receipt-count">0</strong></div>
+          <span class="versus">VS</span>
+          <div class="vote-label cap-label"><span>CAP <small>!cap</small></span><strong id="cap-count">0</strong></div>
+        </div>
+        <div class="timer-track"><div id="timer-fill" class="timer-fill"></div></div>
+      </section>
+
+      <section id="called-card" class="card moment-card called-card" hidden aria-label="Called it celebration">
+        <div class="moment-spark" aria-hidden="true">✳</div>
+        <p class="eyebrow lime-text">THE RECEIPTS ARE IN</p>
+        <h1>CALLED IT<span class="period">.</span></h1>
+        <p id="called-viewer" class="viewer-name"></p>
+        <blockquote id="called-quote"></blockquote>
+        <div class="moment-meta"><span id="called-age"></span><span class="points-pill">+<b id="called-points">0</b> PTS</span></div>
+      </section>
+
+      <section id="cap-card" class="card moment-card cap-card" hidden aria-label="Hall of Cap">
+        <div class="cap-stamp" aria-hidden="true">✕</div>
+        <p class="eyebrow pink-text">THE VISION WASN’T THERE</p>
+        <h2>HALL OF CAP</h2>
+        <p id="cap-viewer" class="viewer-name"></p>
+        <blockquote id="cap-quote"></blockquote>
+        <div class="cap-footer"><span class="cap-mark">CAP</span><span>THE CHAT HAS SPOKEN</span></div>
+      </section>
+
+      <aside class="ticker" aria-label="Open calls">
+        <div class="ticker-brand"><span class="brand-mark">C</span><span>CALLED IT</span></div>
+        <span class="ticker-divider"></span>
+        <span class="ticker-label">LIVE CALLS</span>
+        <span id="ticker-call" class="ticker-call">Waiting for the first prediction…</span>
+        <span id="ticker-index" class="ticker-index">0 / 0</span>
+        <span class="ticker-prompt">!call <span>your prediction</span></span>
+      </aside>
+      <div id="connection-state" class="connection-state" aria-hidden="true"><i></i> CONNECTING</div>
+    </main>
+    <script src="/overlay/overlay.js" defer></script>
+  </body>
+</html>

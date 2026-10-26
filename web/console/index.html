@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Called It — Streamer console</title>
+    <link rel="stylesheet" href="/console/console.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/console" aria-label="Called It console home"><span class="brand-mark">C</span><span>CALLED IT</span></a>
+        <span class="topbar-divider"></span>
+        <span class="page-label">STREAMER CONSOLE</span>
+        <div id="connection" class="connection"><i></i><span>Connecting</span></div>
+      </header>
+
+      <main class="dashboard">
+        <section class="panel context-panel" aria-labelledby="context-title">
+          <div class="panel-heading">
+            <div><p class="eyebrow">LIVE SIGNAL</p><h1 id="context-title">What’s happening</h1></div>
+            <span class="window-tag"><i></i> LAST 5 MIN</span>
+          </div>
+
+          <div class="mic-card">
+            <button id="mic-button" class="mic-button" type="button" aria-pressed="false" aria-label="Start microphone listening">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5M8.5 21.5h7"></path></svg>
+            </button>
+            <div class="mic-copy"><strong id="mic-title">Your mic is off</strong><span id="mic-help">Start listening to add your speech to the context window.</span></div>
+            <span id="mic-state" class="mic-state">OFF</span>
+          </div>
+
+          <div class="transcript-heading"><h2>Transcript &amp; events</h2><span id="entry-count">0 entries</span></div>
+          <div id="transcript" class="transcript" aria-live="polite" aria-relevant="additions text">
+            <div id="transcript-empty" class="empty-state"><span class="empty-icon">◌</span><strong>Nothing in the window yet</strong><span>Speech and incoming raids will show up here.</span></div>
+          </div>
+          <p id="speech-support-note" class="support-note" hidden>Speech recognition is unavailable in this browser. Open the console in Chrome and allow microphone access.</p>
+        </section>
+
+        <section class="panel controls-panel" aria-labelledby="calls-title">
+          <div class="panel-heading calls-heading">
+            <div><p class="eyebrow">CHANNEL CONTROL</p><h2 id="calls-title">Open calls</h2></div>
+            <span id="open-count" class="count-pill">0 OPEN</span>
+          </div>
+
+          <div class="judge-row">
+            <div class="judge-copy"><span class="judge-icon">✳</span><span><strong>Automatic judge</strong><small>Listen for moments that match a call</small></span></div>
+            <label class="switch" aria-label="Toggle automatic judge"><input id="judge-toggle" type="checkbox" checked><span class="switch-track"></span></label>
+          </div>
+
+          <div id="calls-list" class="calls-list">
+            <div id="calls-empty" class="empty-state calls-empty"><span class="empty-icon">↗</span><strong>No open calls</strong><span>Predictions from chat will appear here.</span></div>
+          </div>
+        </section>
+      </main>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <footer class="footer"><span>Called It <span class="footer-dot">•</span> built for live moments</span><span>Local only <i class="lock-dot"></i></span></footer>
+    </div>
+    <script src="/console/console.js" defer></script>
+  </body>
+</html>
