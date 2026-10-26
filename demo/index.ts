@@ -207,8 +207,8 @@ async function runSession(): Promise<void> {
   stage("The stream ends; simulating the Twitch stream.offline event.");
   broadcastOverlayEvent({ type: "session:recap", recap: store.getSessionRecap(demoClockOrigin) });
   console.log("  [EVENT] stream.offline — session recap queued behind the leaderboard.");
-  storyTime += 20_000;
-  await wait(20_500);
+  storyTime += 23_000;
+  await wait(23_000);
   stage("Replay complete: one CALLED IT, one CAP, leaderboard and session recap shown.");
 }
 
