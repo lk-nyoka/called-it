@@ -147,4 +147,19 @@ describe("jury voting", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(jury.getState()?.callId).toBe(2);
   });
+
+  it("starts a queued jury after the Hall of Cap card's three-second hold", async () => {
+    setup();
+    store.createCall({ viewerId: "author-2", viewerLogin: "author2", text: "the next chest is a mimic" });
+    jury.enqueue(1, 0.7);
+    jury.enqueue(2, 0.8);
+    await jury.vote("v1", "v1", "cap");
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(store.getCall(1)?.status).toBe("incorrect");
+    expect(jury.getState()).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(2_999);
+    expect(jury.getState()).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(jury.getState()?.callId).toBe(2);
+  });
 });

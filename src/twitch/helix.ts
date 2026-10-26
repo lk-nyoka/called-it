@@ -3,7 +3,7 @@ import { getAccessToken, getAccount } from "./auth.js";
 const API = "https://api.twitch.tv/helix";
 
 export async function createClipIfLive(viewerLogin: string): Promise<void> {
-  if (process.env.CALLED_IT_DEMO === "1") return;
+  if (process.env.CALLED_IT_DEMO === "1" || process.env.NODE_ENV === "test") return;
   try {
     const account = await getAccount("broadcaster");
     const clientId = process.env.TWITCH_CLIENT_ID;
