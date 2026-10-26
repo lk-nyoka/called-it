@@ -1,5 +1,4 @@
 :root {
-  color-scheme: dark;
   --ink: #0b0e12;
   --paper: #f5f6f2;
   --muted: #a8b0b7;
@@ -74,7 +73,6 @@ blockquote { max-width: 730px; margin: 20px auto 0; color: #f4f5f2; font-size: c
 .called-card .points-pill b { font-size: 30px; }
 
 .cap-card { border-color: rgba(255,111,145,.42); background: radial-gradient(ellipse at 50% 0%, rgba(255, 73, 115, .16), transparent 58%), linear-gradient(145deg, rgba(34, 19, 26, .98), rgba(13, 9, 13, .97)); }
-.cap-stamp { position: absolute; top: 21px; right: 28px; color: var(--pink); font-size: 32px; }
 .pink-text { justify-content: center; color: var(--pink); }
 .cap-card h2 { margin: 16px 0 0; font-size: clamp(48px, 5.5vw, 78px); line-height: .98; font-weight: 950; letter-spacing: -.065em; }
 .cap-card .viewer-name { color: #ff9bb1; }
